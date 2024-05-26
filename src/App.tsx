@@ -1,9 +1,11 @@
-import { Children, CSSProperties, useCallback, useMemo, useState } from "react";
+import { CSSProperties, useCallback, useMemo, useState } from "react";
 import "./App.css";
-import InfiniteLoader from "react-window-infinite-loader";
-import { FixedSizeList as List } from "react-window";
 
-import AutoSizer from "react-virtualized-auto-sizer";
+import List from "react-virtualized/dist/commonjs/List";
+
+import AutoSizer from "react-virtualized/dist/commonjs/AutoSizer";
+
+import InfiniteLoader from "react-virtualized/dist/commonjs/InfiniteLoader";
 import {
   Stack,
   DetailsRow,
@@ -13,6 +15,7 @@ import {
   Text,
   Icon,
 } from "@fluentui/react";
+import { Index } from "react-virtualized";
 
 const columns: any = [
   { key: "name", name: "Name", fieldName: "name" },
@@ -56,7 +59,7 @@ const groupData: IGroup[] = [
     expanded: false,
     isLoading: false,
     key: "group2",
-    name: "Header 1",
+    name: "Header 2",
     type: "group",
     children: [],
   },
@@ -65,7 +68,7 @@ const groupData: IGroup[] = [
     isLoading: false,
     expanded: false,
     key: "group3",
-    name: "Header 1",
+    name: "Header 3",
     type: "group",
     children: [],
   },
@@ -90,7 +93,7 @@ const flattenedItems = [
 ];
 
 const Row = ({ name, style, groupId, index, selection, mixas }: IHeader) => (
-  <Stack horizontal horizontalAlign="start" style={style}>
+  <Stack key={index + "item"} horizontal horizontalAlign="start" style={style}>
     <DetailsRow
       itemIndex={index}
       columns={columns}
@@ -113,7 +116,7 @@ const Header = ({
   onClick,
 }: IHeader) => (
   <Stack
-    key={groupId}
+    key={index + "item"}
     horizontal
     horizontalAlign="start"
     verticalAlign="center"
@@ -156,7 +159,8 @@ function ExampleWrapper({
   const loadMoreItems = isNextPageLoading ? () => {} : loadNextPage;
 
   // Every row is loaded except for our loading indicator row.
-  const isItemLoaded = (index: number) => !hasNextPage || index < items.length;
+  const isItemLoaded = (params: Index) =>
+    !hasNextPage || params.index < items.length;
 
   const selection = new Selection({ items });
 
@@ -202,22 +206,21 @@ function ExampleWrapper({
     <AutoSizer>
       {({ height, width }: { width: number; height: number }) => (
         <InfiniteLoader
-          isItemLoaded={isItemLoaded}
-          itemCount={itemCount}
-          loadMoreItems={loadNextPage}
+          isRowLoaded={isItemLoaded}
+          rowCount={itemCount}
+          loadMoreRows={loadMoreItems}
         >
-          {({ onItemsRendered, ref }) => (
+          {({ onRowsRendered, registerChild }) => (
             <List
               className="List"
+              rowHeight={46}
+              rowCount={itemCount}
               height={height}
-              itemCount={itemCount}
-              itemSize={46}
-              onItemsRendered={onItemsRendered}
-              ref={ref}
+              onRowsRendered={onRowsRendered}
+              ref={registerChild}
               width={width}
-            >
-              {Item}
-            </List>
+              rowRenderer={Item}
+            />
           )}
         </InfiniteLoader>
       )}
@@ -261,7 +264,7 @@ function App() {
         }));
 
         setTimeout(() => {
-          const nextItems = new Array(1000).fill(true).map((_, index) => ({
+          const nextItems = new Array(100000).fill(true).map((_, index) => ({
             name: "mixas",
             key: "mixas" + state.items.length + index,
             mixas: "MIXAS",
